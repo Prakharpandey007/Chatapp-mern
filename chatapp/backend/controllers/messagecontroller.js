@@ -1,5 +1,6 @@
 import Conversation from "../models/conversationmodel.js";
 import Message from '../models/messagemodel.js'
+import { getReceiverSocketId, io } from "../socket/socket.js";
 export const sendMessage = async (req, res) => {
   try {
 
@@ -31,7 +32,15 @@ export const sendMessage = async (req, res) => {
     }
     // save the conversation 
     await conversation.save();
-    
+    // SOCKET IO FUNCTIONALITY WILL GO HERE
+
+
+		const receiverSocketId = getReceiverSocketId(receiverId);
+    // if user is online
+		if (receiverSocketId) {
+			// io.to(<socket_id>).emit() used to send events to specific client
+			io.to(receiverSocketId).emit("newMessage", newMessage);
+		}
 res.status(201).json(newMessage);
   } catch (error) {
     console.log("error is sendmessage controller", errorMessage);
