@@ -7,18 +7,20 @@ export const sendMessage = async (req, res) => {
     const { message } = req.body;   //message from user as input 
     const { id: receiverId } = req.params;   //receivewr id 
     const senderId = req.user._id;    //
-    // first find the conservation between user
+    // first find the conservation between user from database 
+    // $all indicates the query matched both sender and receiver id 
     let conversation = await Conversation.findOne({
       participants: {
         $all: [senderId, receiverId],
       },
     });
-    // if theyy send message first time and no conversation in future then we create conversation
+    // if theyy send message first time and no conversation in future then we create  new conversation
     if (!conversation) {
       conversation = await Conversation.create({
         participants: [senderId, receiverId],
       });
     }
+    //created a new message 
     const newMessage = new Message({
         senderId,
         receiverId,
@@ -26,19 +28,24 @@ export const sendMessage = async (req, res) => {
     });
     // save the new message 
     await newMessage.save();
-    //if new message successfull created then push its id in array 
+    //if new message successfull created then push its id in conversation  array 
+    // If the message was successfully created, its ID is added to the messages array in the Conversation document.
     if (newMessage) {
         conversation.messages.push(newMessage._id);
     }
     // save the conversation 
     await conversation.save();
+
+
+
     // SOCKET IO FUNCTIONALITY WILL GO HERE
 
-
+// getReceiverSOcketId is used to get the socket id of user 
 		const receiverSocketId = getReceiverSocketId(receiverId);
     // if user is online
 		if (receiverSocketId) {
 			// io.to(<socket_id>).emit() used to send events to specific client
+      // if the receiver is online sender will send a new message along with new message 
 			io.to(receiverSocketId).emit("newMessage", newMessage);
 		}
 res.status(201).json(newMessage);
@@ -49,9 +56,10 @@ res.status(201).json(newMessage);
 };
 
 //getting messages of user 
+// get all the messages between authenticated user and other user 
 export const getMessages = async (req, res) => {
 	try {
-        // user u chat with 
+        // user id with whom u want ot chat 
 		const { id: userToChatId } = req.params;
 		const senderId = req.user._id;
 
