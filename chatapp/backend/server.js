@@ -1,3 +1,4 @@
+import path from "path";
 import express from "express";
 import dotenv from "dotenv";
 //routes
@@ -10,6 +11,7 @@ import cookieParser from 'cookie-parser';
 
 dotenv.config();
 const PORT=process.env.PORT || 8002;
+const __dirname=path.resolve();
 
 
 //middlewares
@@ -18,6 +20,13 @@ app.use(cookieParser());// token from cookie parser
 app.use('/api/auth',authroutes);
 app.use('/api/message',messageroutes);
 app.use('/api/user',userroutes);
+
+// deployment part 
+app.use(express.static(path.join(__dirname,"/frontend/dist")))
+app.get("*", (req, res) => {
+	res.sendFile(path.join(__dirname, "frontend", "dist", "index.html"));
+});
+
 server.listen(PORT,()=>{
     connectToMongoDB();
     console.log(`server running succesfully on port ${PORT}`);
